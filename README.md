@@ -69,6 +69,9 @@ namespace DialogActionParserTest
 }
 ```
 
+The main thing to grok is the `DialogActionValue` class, which implements a sort of variable data type. Depending on its `type` field, the data encapsulated in the instance can be
+accessed by one of the read-only properties: `Identifier`, `String`, `Bool`, `Number` or `Operator`.
+
 ## Notes
 
 * The design of this parser will not win any awards in efficiency or performance, you really shouldn't use it for anything complex.
