@@ -3,8 +3,16 @@ using System.Collections.Generic;
 using System;
 using System.Text;
 using System.Globalization;
+using System.ComponentModel;
+using System.Runtime.InteropServices.WindowsRuntime;
 
-public class DialogActionBaseValue
+public class DialogActionParserException : Exception
+{
+    public DialogActionParserException(string msg) : base(msg) { }
+}
+
+
+public class DialogActionValue
 {
     public enum Type
     {
@@ -16,99 +24,125 @@ public class DialogActionBaseValue
     };
     public Type type;
 
-    public override string ToString()
+    private string s;
+    private float f;
+    private bool b;
+
+    public string String
     {
-        return "";
+        get
+        {
+            if (type != Type.String)
+            {
+                throw new DialogActionParserException($"Not a string. {type}");
+            }
+            return s;
+        }
     }
 
-}
-
-public class DialogActionIdentifierValue : DialogActionBaseValue
-{
-    public string i;
-
-    public DialogActionIdentifierValue(string i)
+    public string Identifier
     {
-        this.type = Type.Identifier;
-        this.i = i;
+        get
+        {
+            if (type != Type.Identifier)
+            {
+                throw new DialogActionParserException($"Not an identifier. {type}");
+            }
+            return s;
+        }
     }
 
-    public override string ToString()
+    public bool Bool
     {
-        return $"<i {this.i}>";
+        get
+        {
+            if (type != Type.Bool)
+            {
+                throw new DialogActionParserException($"Not a Bool. {type}");
+            }
+            return b;
+        }
     }
-}
 
-public class DialogActionStringValue : DialogActionBaseValue
-{
-    public string s;
-
-    public DialogActionStringValue(string s)
+    public float Number
     {
-        this.type = Type.String;
+        get
+        {
+            if (type != Type.Number)
+            {
+                throw new DialogActionParserException($"Not a number. {type}");
+            }
+            return f;
+        }
+    }
+
+    public string Operator
+    {
+        get
+        {
+            if (type != Type.Operator)
+            {
+                throw new DialogActionParserException($"Not an operator. {type}");
+            }
+            return s;
+        }
+    }
+
+    public DialogActionValue(Type t, string s)
+    {
+        if (t != Type.String && t != Type.Identifier && t != Type.Operator)
+        {
+            throw new DialogActionParserException($"This constructor form is only applicable to strings, identifiers and operators");
+        }
+        type = t;
         this.s = s;
     }
 
-    public override string ToString()
+    public DialogActionValue(Type t, float f)
     {
-        return $"<s {this.s}>";
+        if (t != Type.Number)
+        {
+            throw new DialogActionParserException($"This constructor form is only applicable to numbers");
+        }
+        type = t;
+        this.f = f;
     }
-}
 
-public class DialogActionBoolValue : DialogActionBaseValue
-{
-    public bool b;
-
-    public DialogActionBoolValue(bool b)
+    public DialogActionValue(Type t, bool b)
     {
-        this.type = Type.Bool;
+        if (t != Type.Bool)
+        {
+            throw new DialogActionParserException($"This constructor form is only applicable to bools");
+        }
+        type = t;
         this.b = b;
     }
 
     public override string ToString()
     {
-        return $"<b {this.b}>";
+        switch(type)
+        {
+            case Type.String:
+                return $"<s {s}>";
+            case Type.Identifier:
+                return $"<i {s}>";
+            case Type.Operator:
+                return $"<o {s}>";
+            case Type.Number:
+                return $"<n {f}>";
+            case Type.Bool:
+                return $"<b {b}>";
+            default:
+                throw new DialogActionParserException($"Unknown type {type}");
+        }
     }
+
 }
-
-public class DialogActionNumberValue : DialogActionBaseValue
-{
-    public float f;
-
-    public DialogActionNumberValue(float f)
-    {
-        this.type = Type.Number;
-        this.f = f;
-    }
-
-    public override string ToString()
-    {
-        return $"<f {this.f}>";
-    }
-}
-
-public class DialogActionOperatorValue : DialogActionBaseValue
-{
-    public string o;
-
-    public DialogActionOperatorValue(string o)
-    {
-        this.type = Type.Operator;
-        this.o = o;
-    }
-
-    public override string ToString()
-    {
-        return $"<o {this.o}>";
-    }
-}
-
-
 
 public class DialogAction
 {
     public string action;
-    public List<DialogActionBaseValue> args;
+    public List<DialogActionValue> args;
 
     public override string ToString()
     {
@@ -121,11 +155,6 @@ public class DialogAction
         
         return sb.ToString();
     }
-}
-
-public class DialogActionParserException : Exception
-{
-    public DialogActionParserException(string msg) : base(msg) { }
 }
 
 public class DialogActionParser
@@ -154,7 +183,7 @@ public class DialogActionParser
 
             var action = new DialogAction {
                 action = cmd.Item2,
-                args = new List<DialogActionBaseValue>()
+                args = new List<DialogActionValue>()
             };
 
             while (line.Length > 0)
@@ -168,7 +197,7 @@ public class DialogActionParser
                 Tuple<int, bool> argB = gobbleBool(line);
                 if (argB.Item1 != 0)
                 {
-                    action.args.Add(new DialogActionBoolValue(argB.Item2));
+                    action.args.Add(new DialogActionValue(DialogActionValue.Type.Bool, argB.Item2));
                     line = line.Substring(argB.Item1);
                     continue;
                 }
@@ -176,7 +205,7 @@ public class DialogActionParser
                 Tuple<int, float> argN = gobbleNumber(line);
                 if (argN.Item1 != 0)
                 {
-                    action.args.Add(new DialogActionNumberValue(argN.Item2));
+                    action.args.Add(new DialogActionValue(DialogActionValue.Type.Number, argN.Item2));
                     line = line.Substring(argN.Item1);
                     continue;
                 }
@@ -184,7 +213,7 @@ public class DialogActionParser
                 Tuple<int, string> argS = gobbleIdentifier(line);
                 if (argS.Item1 != 0)
                 {
-                    action.args.Add(new DialogActionIdentifierValue(argS.Item2));
+                    action.args.Add(new DialogActionValue(DialogActionValue.Type.Identifier, argS.Item2));
                     line = line.Substring(argS.Item1);
                     continue;
                 }
@@ -192,7 +221,7 @@ public class DialogActionParser
                 argS = gobbleString(line);
                 if (argS.Item1 != 0)
                 {
-                    action.args.Add(new DialogActionStringValue(argS.Item2));
+                    action.args.Add(new DialogActionValue(DialogActionValue.Type.String, argS.Item2));
                     line = line.Substring(argS.Item1);
                     continue;
                 }
@@ -200,7 +229,7 @@ public class DialogActionParser
                 argS = gobbleOperator(line);
                 if (argS.Item1 != 0)
                 {
-                    action.args.Add(new DialogActionOperatorValue(argS.Item2));
+                    action.args.Add(new DialogActionValue(DialogActionValue.Type.Operator, argS.Item2));
                     line = line.Substring(argS.Item1);
                     continue;
                 }
