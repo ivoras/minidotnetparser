@@ -43,8 +43,8 @@ namespace DialogActionParserTest
     {
         static void Main(string[] args)
         {
-            var testActions = "let a = 81 \nlet b = 'Zanzibar' \nshow_browser 'http://www.google.com' \nlet blah='O\\'Really?'\n let t =true";
-            var actions = DialogActionParser.Parse(testActions);
+            var testProgram = "let a = 81 \nlet b = 'Zanzibar' \nshow_browser 'http://www.google.com' \nlet blah='O\\'Really?'\n let t =true";
+            var actions = DialogActionParser.Parse(testProgram);
 
             var symbols = new Dictionary<string, DialogActionValue>();
 
