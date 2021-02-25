@@ -75,3 +75,4 @@ accessed by one of the read-only properties: `Identifier`, `String`, `Bool`, `Nu
 ## Notes
 
 * The design of this parser will not win any awards in efficiency or performance, you really shouldn't use it for anything complex.
+* This same design is also implemented as a Go module `minigoscript` at https://github.com/ivoras/minigoscript
